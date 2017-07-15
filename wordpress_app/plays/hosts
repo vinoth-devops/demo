@@ -1,0 +1,6 @@
+[host]
+ec2-34-250-70-239.eu-west-1.compute.amazonaws.com
+
+[host:vars]
+ansible_ssh_private_key_file=~/secret.pem
+ansible_ssh_user=ubuntu
