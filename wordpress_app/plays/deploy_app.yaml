@@ -5,7 +5,7 @@
   tasks:
 #create directories to mount with containers
   - name: create directories
-    file: path={{ item }} state=directory
+    file: path=./app/{{ item }} state=directory
     with_items:
       - db-data
       - logs/nginx
@@ -13,15 +13,15 @@
       - wordpress
 #copy conf and docker-compose files to remote machine
   - name: copy nginx conf file
-    copy: src=../config/nginx/wordpress.conf dest=./nginx/wordpress.conf
+    copy: src=../config/nginx/wordpress.conf dest=./app/nginx/wordpress.conf
 
   - name: copy docker-compose file
-    copy: src=../docker-compose.yml dest=./docker-compose.yml
+    copy: src=../docker-compose.yml dest=./app/docker-compose.yml
 
 #run the docker-compose up
   - docker_service:
       project_name: deploy_wordpress
-      project_src: ./
+      project_src: ./app
       state: present
     register: output
 

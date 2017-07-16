@@ -1,0 +1,27 @@
+---
+- hosts: all
+  gather_facts: no
+
+  tasks:
+#create directories to mount with containers
+  - name: create directories
+    file: path=./monitoring/{{ item }} state=directory
+    with_items:
+      - esdata
+      - logstash
+#copy conf and docker-compose files to remote machine
+  - name: copy logstash conf file
+    copy: src=../config/logstash/logstash.conf dest=./monitoring/logstash/logstash.conf
+
+  - name: copy docker-compose file
+    copy: src=../docker-compose.yml dest=./monitoring/docker-compose.yml
+
+#run the docker-compose up
+  - docker_service:
+      project_name: deploy_elk
+      project_src: ./monitoring
+      state: present
+    register: output
+
+  - debug:
+      var: output

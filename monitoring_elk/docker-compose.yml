@@ -1,0 +1,33 @@
+version: '2'
+services:
+  elasticsearch:
+    image: elasticsearch
+    ports:
+        - '9200:9200'
+        - '9300:9300'
+    volumes:
+        - ./esdata:/usr/share/elasticsearch/data
+    restart: always
+
+  logstash:
+    image: logstash
+    depends_on:
+      - elasticsearch
+    command: -f /logstash/logstash.conf
+    ports:
+      - '5044:5044'
+    volumes:
+      - ./logstash:/logstash
+    links:
+      - elasticsearch
+    restart: always
+
+  kibana:
+    image: kibana
+    depends_on:
+      - elasticsearch
+    ports:
+      - '5601:5601'
+    links:
+      - elasticsearch
+    restart: always
