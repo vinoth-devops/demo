@@ -1,1 +1,1 @@
-ansible-playbook -i hosts plays/deploy_infra.yaml
+ansible-playbook -i plays/hosts plays/deploy_infra.yaml

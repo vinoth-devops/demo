@@ -1,0 +1,79 @@
+---
+- hosts: localhost
+  gather_facts: no
+  vars_files:
+    - ./variables.yaml
+
+  environment:
+    EC2_REGION: "{{ region }}"
+
+  tasks:
+    - ec2_vpc_net:
+        name: "{{ vpc_name }}"
+        cidr_block: "{{ vpc_cidr }}"
+      register: vpc
+
+    - ec2_vpc_igw:
+        vpc_id: "{{vpc.vpc.id}}"
+        state: present
+      register: igw
+
+    - ec2_vpc_subnet:
+        state: present
+        vpc_id: "{{vpc.vpc.id}}"
+        cidr: "{{ subnet_cidr }}"
+        resource_tags:
+          Name: "{{ subnet_name }}"
+      register: ec2_subnet
+
+    - name: Set up public subnet route table
+      ec2_vpc_route_table:
+        vpc_id: "{{vpc.vpc.id}}"
+        tags:
+          Name: "{{ route_name }}"
+        subnets:
+          - "{{ ec2_subnet.subnet.id }}"
+        routes:
+          - dest: 0.0.0.0/0
+            gateway_id: "{{ igw.gateway_id }}"
+      register: public_route_table
+
+    - name: infra security group
+      ec2_group:
+        name: "{{ sg_name }}"
+        description: "{{ sg_name }}"
+        vpc_id: "{{vpc.vpc.id}}"
+        rules:
+          - proto: tcp
+            from_port: 80
+            to_port: 80
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            from_port: 5601
+            to_port: 5601
+            cidr_ip: 0.0.0.0/0
+
+    - ec2:
+        key_name: "{{ keypair }}"
+        group: "{{ sg_name }}"
+        instance_type: "{{ instance_type }}"
+        image: "{{ ami_id }}"
+        wait: yes
+        wait_timeout: 500
+        count: 1
+        instance_tags:
+          Name: "{{ instance_name }}"
+        vpc_subnet_id: "{{ ec2_subnet.subnet.id }}"
+        assign_public_ip: yes
+        user_data: "{{lookup('file', '../user_data.sh')}}"
+      register: ec2
+
+    - name: Add instance to local host group
+      local_action: >
+        lineinfile dest="./hosts" regexp="{{ item.public_ip }}" insertafter="[ec2_host]"
+        line="{{ item.public_ip }} ansible_ssh_private_key_file=~/{{ keypair }}.pem ansible_ssh_user=ubuntu" state=present
+      with_items: "{{ ec2.instances }}"

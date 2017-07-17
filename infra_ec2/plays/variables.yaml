@@ -1,0 +1,16 @@
+---
+#variables
+region: eu-west-1
+vpc_name: demo_vpc
+vpc_cidr: 172.24.0.0/24
+
+subnet_name: demo_public_subnet
+subnet_cidr: 172.24.0.0/28
+
+route_name: demo_public_route
+sg_name: demo_server_sg
+
+keypair: secret
+instance_type: t2.micro
+ami_id: ami-d37961b5 #ubuntu 14.04 LTS
+instance_name: demo_server
